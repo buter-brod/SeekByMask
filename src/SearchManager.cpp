@@ -16,7 +16,7 @@ size_t getFileSize(const std::string& filename) {
     return sz;
 #else
     // some sources say that this method is not guaranteed to provide exact size in bytes
-    std::ifstream file;
+	std::ifstream file;
     file.open(filename, std::ios::in);
     assert(file.is_open(), "Unable to open input file");
 
@@ -35,10 +35,7 @@ void SearchManager::getPartBounds() {
     const size_t fileSize = getFileSize(_filename);
     const size_t approxPartSize = std::max(_mask.size(), fileSize / _maxThreadsCount);
 
-    std::string line;
-    std::ifstream file;
-    file.open(_filename, std::ios::in);
-    assert(file.is_open(), "Unable to open input file");
+    FileHandle file(_filename);
 
     unsigned int currentPart = 0;
     size_t position = 0;
@@ -48,8 +45,9 @@ void SearchManager::getPartBounds() {
         const size_t assumedFirstByteOfNextPart = position + approxPartSize;
         const size_t assumedEndOfThisPartPos = assumedFirstByteOfNextPart - 1;
 
-        file.seekg(assumedFirstByteOfNextPart, std::ios::beg);
-    	getline(file, line);
+        file.seek(assumedFirstByteOfNextPart);
+
+        const std::string& line = file.readLine();
 
         const bool sizeExceed = assumedEndOfThisPartPos >= fileSize - 1;
         const bool isLastPossiblePart = (currentPart == _maxThreadsCount - 1);
@@ -66,7 +64,7 @@ void SearchManager::getPartBounds() {
 
         if (!sizeExceed) {
             const auto extraSize = line.size();
-            endPos = assumedEndOfThisPartPos + extraSize + 1;
+            endPos = std::min(endPos, assumedEndOfThisPartPos + extraSize);
         }
 
         _parts.insert({ currentPart, { position, endPos } });
@@ -133,31 +131,17 @@ void SearchManager::Start() {
 
 void SearchManager::dumpOutputParts(const std::string& outputFilename) const{
     
-    std::ifstream file;
-    file.open(_filename, std::ios::in);
-    assert(file.is_open(), "Unable to open input file");
-    
-    const auto read = [&file](const size_t size) -> std::string {
-        char* buf = new char[size];
-        file.read(buf, size);
-        const std::string str(buf, size);
-        delete[] buf;
-
-        return str;
-    };
-
+    FileHandle file(_filename);
     std::string output;
 
     for (size_t i = 0; i < _parts.size(); i++) {
         const auto sz = _parts.at(i)._size;
 
-        file.seekg(_parts.at(i)._start, std::ios::beg);
-        const std::string partStr = read(sz);
-
-        output += "[PART " + std::to_string(i) + "]" + partStr;
+        const std::string& partStr = file.read(_parts.at(i)._start, sz);
+        output += "[" + std::to_string(i) + "]" + partStr;
     }
 
-    std::ofstream out(outputFilename);
+    std::ofstream out(outputFilename, std::ios::binary);
     out << output;
     out.close();
 }

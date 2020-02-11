@@ -55,11 +55,8 @@ std::set<size_t> Worker::findByMask(const std::string& where, const std::string&
 
 void Worker::operator()() {
 
-    std::ifstream file;
-    file.open(_filename, std::ios::in);
-    assert(file.is_open(), "Unable to open input file");
-    file.seekg(_bounds._start, std::ios::beg);
-	std::string line;
+    FileHandle file(_filename);
+    file.seek(_bounds._start);
 
     bool outOfBounds = false;
 
@@ -67,11 +64,8 @@ void Worker::operator()() {
 
     do {
 
-        getline(file, line);
-
-        position += line.size() + 1;
-        line += "\n";
-
+        const std::string& line = file.readLine();
+        position += line.size();
         const auto& where = findByMask(line, _mask);
 
         for (const auto& foundPos : where) {

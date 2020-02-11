@@ -40,7 +40,7 @@ private:
 	std::map<size_t, PartInfo > _parts;
 	std::map<size_t, Worker::Ptr> _workers;
 
-	bool _parallel{false}; //todo!!!
+	bool _parallel{true};
 
 	//output data
 	std::deque<OccurrenceInfo> _results;
