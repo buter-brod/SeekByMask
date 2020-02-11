@@ -2,6 +2,7 @@
 #include "Worker.h"
 
 #include <fstream>
+#include <algorithm>
 
 #if _HAS_CXX17
 #include <filesystem>
@@ -17,7 +18,6 @@ size_t getFileSize(const std::string& filename) {
     // some sources say that this method is not guaranteed to provide exact size in bytes
     std::ifstream file;
     file.open(filename, std::ios::in);
-
     assert(file.is_open(), "Unable to open input file");
 
     file.seekg(0, std::ios::end);
@@ -33,7 +33,7 @@ void SearchManager::getPartBounds() {
     _parts.clear();
 
     const size_t fileSize = getFileSize(_filename);
-    const size_t approxPartSize = fileSize / _threadsCount;
+    const size_t approxPartSize = std::max(_mask.size(), fileSize / _maxThreadsCount);
 
     std::string line;
     std::ifstream file;
@@ -43,34 +43,45 @@ void SearchManager::getPartBounds() {
     unsigned int currentPart = 0;
     size_t position = 0;
 
-    while (currentPart < _threadsCount) {
+    while (position < fileSize) {
 
-        const size_t assumedEndOfThisPartPos = position + approxPartSize;
-        file.seekg(assumedEndOfThisPartPos, std::ios::beg);
-        getline(file, line);
+        const size_t assumedFirstByteOfNextPart = position + approxPartSize;
+        const size_t assumedEndOfThisPartPos = assumedFirstByteOfNextPart - 1;
 
-        const bool sizeExceed = assumedEndOfThisPartPos >= fileSize;
-        const bool isLastPart = currentPart == _threadsCount - 1;
-        assert(isLastPart == sizeExceed, "something wrong with last part?");
+        file.seekg(assumedFirstByteOfNextPart, std::ios::beg);
+    	getline(file, line);
+
+        const bool sizeExceed = assumedEndOfThisPartPos >= fileSize - 1;
+        const bool isLastPossiblePart = (currentPart == _maxThreadsCount - 1);
+
+        if (sizeExceed && !isLastPossiblePart) {
+	        /* case when actual parts/threads will be less than specified by _threadsCount.
+	         * it depends on two factors:
+	         * 1. average line length: if lines are relatively long, each part will exceed approxPartSize more aggresively
+	         * 2. given desirable number of parts/threads: the more parts, the more likely last one (or even last few) will be empty.
+	         */
+        }
 
         size_t endPos = fileSize - 1;
 
-        if (!isLastPart) {
-            const auto extraSize = (size_t)line.size();
-            const size_t realSize = approxPartSize + extraSize - 1;
-            endPos = position + realSize;
+        if (!sizeExceed) {
+            const auto extraSize = line.size();
+            endPos = assumedEndOfThisPartPos + extraSize + 1;
         }
 
         _parts.insert({ currentPart, { position, endPos } });
 
-        position = endPos + 2;
-
+        position = endPos + 1;
         ++currentPart;
     }
+
+#if DEBUG_PARTS
+    dumpOutputParts();
+#endif
 }
 
 void SearchManager::startWorkers() {
-	
+
     for (size_t partInd = 0; partInd < _parts.size(); ++partInd) {
         const PartInfo& part = _parts.at(partInd);
 
@@ -78,6 +89,10 @@ void SearchManager::startWorkers() {
         _workers.insert({ partInd, workerPtr });
 
         workerPtr->Start();
+
+        if (!_parallel) {
+	        workerPtr->Wait();
+        }
     }
 }
 
@@ -106,29 +121,22 @@ void SearchManager::mergeWorkers() {
     }
 }
 
-
 void SearchManager::Start() {
 
     getPartBounds();
-
-#ifdef DEBUG_PARTS
-    debugOutputParts();
-#endif
-
     startWorkers();
     waitWorkers();
     mergeWorkers();	
 }
 
-#ifdef DEBUG_PARTS
+#if DEBUG_PARTS
 
-void SearchManager::debugOutputParts(const std::string& outputFilename) const{
+void SearchManager::dumpOutputParts(const std::string& outputFilename) const{
     
     std::ifstream file;
     file.open(_filename, std::ios::in);
     assert(file.is_open(), "Unable to open input file");
-    std::string output;
-
+    
     const auto read = [&file](const size_t size) -> std::string {
         char* buf = new char[size];
         file.read(buf, size);
@@ -138,13 +146,15 @@ void SearchManager::debugOutputParts(const std::string& outputFilename) const{
         return str;
     };
 
+    std::string output;
+
     for (size_t i = 0; i < _parts.size(); i++) {
         const auto sz = _parts.at(i)._size;
 
         file.seekg(_parts.at(i)._start, std::ios::beg);
         const std::string partStr = read(sz);
 
-        output += "PART " + std::to_string(i) + ":\n" + partStr + "\n";
+        output += "[PART " + std::to_string(i) + "]" + partStr;
     }
 
     std::ofstream out(outputFilename);
