@@ -1,9 +1,8 @@
 #include "SearchManager.h"
 #include "Worker.h"
-
-#include <fstream>
-#include <algorithm>
 #include "FileWrapper.h"
+
+#include <algorithm>
 
 #if _HAS_CXX17
 #include <filesystem>
@@ -31,7 +30,7 @@ void SearchManager::getPartBounds() {
 
     FileHandle file(_filename);
 
-    unsigned int currentPart = 0;
+    size_t currentPart = 0;
     size_t position = 0;
 
     while (position < fileSize) {
@@ -41,7 +40,8 @@ void SearchManager::getPartBounds() {
 
         file.Seek(assumedFirstByteOfNextPart);
 
-        const std::string& line = file.ReadLine();
+        std::string line;
+        file.ReadLine(line);
 
         const bool sizeExceed = assumedEndOfThisPartPos >= fileSize - 1;
         const bool isLastPossiblePart = (currentPart == _maxThreadsCount - 1);
@@ -69,7 +69,8 @@ void SearchManager::getPartBounds() {
 
 #ifndef NDEBUG
     if (_debugParts) {
-        dumpOutputParts();
+        const std::string& outFileName = "partsDebugOutput.txt";
+        dumpOutputParts(outFileName);
     }    
 #endif
 }
@@ -133,6 +134,7 @@ void SearchManager::Start() {
 }
 
 #ifndef NDEBUG
+#include <fstream>
 
 void SearchManager::dumpOutputParts(const std::string& outputFilename) const{
     

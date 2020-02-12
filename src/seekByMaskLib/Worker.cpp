@@ -19,26 +19,31 @@ bool Worker::checkMask(const std::string& what, const size_t offset, const std::
 
     for (size_t i = 0; i < sz; ++i) {
 
-        const bool symbolOk = (mask[i] == what[i + offset]) || (mask[i] == '?');
-        if (!symbolOk) {
-            return false;
+    	const char checkSymbol = what[i + offset];
+
+        if (checkSymbol == '\r' || checkSymbol == '\n') {
+	        return false;
+        }
+
+        const char maskSymbol = mask[i];
+
+        if (maskSymbol != '?' && maskSymbol != checkSymbol) {
+	        return false;
         }
     }
 
     return true;
 }
 
-std::set<size_t> Worker::findByMask(const std::string& where, const std::string& mask) {
+bool Worker::findByMask(const std::string& where, const std::string& mask, std::set<size_t>& results) {
 
     const auto maskSize = (size_t)mask.size();
 
-    std::set<size_t> results;
-
     if (where.size() < maskSize) {
-        return results;
+        return false;
     }
 
-    size_t i = 0;
+	size_t i = 0;
     while (i <= where.size() - maskSize) {
         const bool foundHere = checkMask(where, i, mask);
 
@@ -51,7 +56,7 @@ std::set<size_t> Worker::findByMask(const std::string& where, const std::string&
         }
     }
 
-    return results;
+    return !results.empty();
 }
 
 void Worker::process() {
@@ -65,13 +70,18 @@ void Worker::process() {
 
     do {
 
-        const std::string& line = file.ReadLine();
-        position += line.size();
-        const auto& where = findByMask(line, _mask);
+        std::string line;
+    	file.ReadLine(line);
 
-        for (const auto& foundPos : where) {
-            const std::string str = line.substr(foundPos, _mask.size());
-            _occurrences.emplace_back(_linesCount, foundPos, str);
+        position += line.size();
+        std::set<size_t> places;
+        const bool found = findByMask(line, _mask, places);
+
+        if (found) {
+            for (const auto& place : places) {
+                const std::string& str = line.substr(place, _mask.size());
+                _occurrences.emplace_back(_linesCount, place, str);
+            }
         }
 
         outOfBounds = position > _bounds._end;

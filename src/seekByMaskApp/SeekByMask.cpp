@@ -1,5 +1,4 @@
 #include "SearchManager.h"
-
 #include <iostream>
 
 const std::string defaultMask = "c?ap";

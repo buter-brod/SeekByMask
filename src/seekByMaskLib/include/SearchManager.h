@@ -1,11 +1,9 @@
 #ifndef SEARCHMANAGER_H
 #define SEARCHMANAGER_H
 
-//todo disable
-//#define DEBUG_PARTS 1
-
 #include "SearchUtils.h"
 #include "Worker.h"
+
 #include <map>
 
 class SearchManager {
@@ -28,8 +26,8 @@ protected:
 	void checkErrors();
 	void mergeWorkers();
 
-#ifndef RELEASE
-    void dumpOutputParts(const std::string& outputFilename = "partsDebugOutput.txt") const;
+#ifndef NDEBUG
+    void dumpOutputParts(const std::string& outputFilename) const;
 #endif
 
 private:

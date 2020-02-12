@@ -6,7 +6,6 @@
 #include <memory>
 #include <thread>
 #include <deque>
-#include <fstream>
 #include <set>
 
 class Worker {
@@ -26,7 +25,7 @@ public:
     size_t GetLinesCount() const { return _linesCount; }
 
     static bool checkMask(const std::string& what, const size_t offset, const std::string& mask);
-    static std::set<size_t> findByMask(const std::string& where, const std::string& mask);
+    static bool findByMask(const std::string& where, const std::string& mask, std::set<size_t>& results);
 
     void operator()();
 

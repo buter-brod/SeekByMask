@@ -58,30 +58,50 @@ std::string FileHandle::Read(const size_t where, const size_t size) {
     Seek(where);
 
     std::string str;
-    str.resize(size);
+    str.resize(size, 0);
 
     void* strDataPtr = (void*)str.data();
 
-    memset(strDataPtr, 0, size);
     fread_s(strDataPtr, size, size, 1, _file);
 
-    str.shrink_to_fit();
     _cursor += str.size();
 
     return str;
 }
 
-std::string FileHandle::ReadLine() {
+void FileHandle::ReadLine(std::string& output) {
 
     assert(isOpen(), "FileHandle::Seek file isn't open");
-    memset(_buf, 0, strBufferLen);
-    fgets(_buf, strBufferLen, _file);
 
-    assert(_buf[strBufferLen - 2] == 0, "FileHandle::ReadLine error, input line exceeds max byte count ");
+	output.clear();
 
-    std::string str(_buf);
+    const size_t strBufDefault = 512;
+    size_t bufSize = strBufDefault;
+    bool exceed = false;
 
-    _cursor += str.size();
+    do
+    {
+        size_t writtenBytes = 0;
+        size_t toRead = bufSize;
 
-    return str;
+        if (!output.empty()) {
+            writtenBytes = bufSize - 1;
+            toRead = bufSize * 2 + 1;
+            bufSize *= 3;
+        }
+        
+        output.resize(bufSize, 0);
+
+        char* strDataPtr = (char*)output.data() + writtenBytes;
+        fgets(strDataPtr, (int)toRead, _file);
+
+        const char lastWrittenSym = output[bufSize - 2];
+        exceed = lastWrittenSym == 0 || lastWrittenSym == '\n';
+    }
+    while (!exceed);
+
+    const char nullterm = 0;
+    output.resize(output.find(nullterm));
+
+    _cursor += output.size();
 }

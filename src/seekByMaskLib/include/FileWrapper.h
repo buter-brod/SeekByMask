@@ -17,17 +17,16 @@ public:
 
     void Seek(const size_t where);
     std::string Read(const size_t where, const size_t size);
-    std::string ReadLine();
+    void ReadLine(std::string& output);
 
 protected:
 	void open();
     bool isOpen() const;
-    void close();   
+    void close();
 
 private:
     std::string _filename;
 
-    char _buf[strBufferLen];
     size_t _cursor{ 0 };
     FILE* _file{ nullptr };
 };

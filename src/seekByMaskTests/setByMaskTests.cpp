@@ -1,16 +1,10 @@
 #include "SearchManager.h"
-#include "FileWrapper.h"
 
 #include <chrono>
 #include <iostream>
 
 const std::string defaultMask = "c?ap";
 static const std::string defaultFilename = "../Resources/oxford_dict.txt";
-
-size_t getCoresNum() {
-    static auto coresNum = (size_t)std::thread::hardware_concurrency();
-    return coresNum;
-}
 
 long long getTimeMCS() {
     const auto now = std::chrono::system_clock::now();
@@ -32,34 +26,9 @@ float testSearch(const std::string& filename, const std::string& mask, const siz
     return dtSec;
 }
 
-size_t maxLineLenCount(const std::string& filename) {
-
-    std::ifstream file;
-    file.open(filename, std::ios::in);
-    assert(file.is_open(), "unable to open file " + filename);
-
-    size_t maxLen = 0;
-    std::string line;
-
-    do {
-        getline(file, line);
-
-        if (line.size() > maxLen) {
-            maxLen = line.size();
-        }
-    } while (!file.eof());
-
-    file.close();
-    return maxLen;
-}
-
 size_t testRun(const std::string& filename, const std::string& mask) {
 
-    const auto longestLineSize = maxLineLenCount(filename) + 2; // respect LF or CRLF endings
-
-    assert(longestLineSize < FileHandle::strBufferLen, std::string("input file has very long lines, l=") + std::to_string(longestLineSize) + ", max=" + std::to_string(FileHandle::strBufferLen));
-
-    const auto cores = getCoresNum();
+    const auto cores = (size_t)std::thread::hardware_concurrency();
     const size_t maxThreads = 1024;
 
     float bestTime = 100500.f;
@@ -98,7 +67,6 @@ size_t testRun(const std::string& filename, const std::string& mask) {
 
 int main() {
 
-    testRun(defaultFilename, defaultMask);
-
-  return 0;
+	testRun(defaultFilename, defaultMask);
+	return 0;
 }
