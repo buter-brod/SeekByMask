@@ -3,8 +3,8 @@
 #include <chrono>
 #include <iostream>
 
-const std::string defaultMask = "c?ap";
-static const std::string defaultFilename = "../Resources/oxford_dict.txt";
+const std::string threadsTestMask = "c?ap";
+static const std::string threadsTestFilename = "../Resources/oxford_dict.txt";
 
 long long getTimeMCS() {
     const auto now = std::chrono::system_clock::now();
@@ -26,7 +26,7 @@ float testSearch(const std::string& filename, const std::string& mask, const siz
     return dtSec;
 }
 
-size_t testRun(const std::string& filename, const std::string& mask) {
+size_t numThreadsTestRun(const std::string& filename, const std::string& mask) {
 
     const auto cores = (size_t)std::thread::hardware_concurrency();
     const size_t maxThreads = 1024;
@@ -65,8 +65,69 @@ size_t testRun(const std::string& filename, const std::string& mask) {
     return bestThreads;
 }
 
+bool casesRun() {
+	
+    {
+        SearchManager sm("../Resources/win_endings.txt", "mask", 4);
+        sm.Start();
+        const auto results = sm.GetResults();
+
+        const std::string& winEndingsFailMsg = "win_endings test failed";
+
+        assert(results.size() == 2, winEndingsFailMsg);
+        assert(results[0]._line == 5 && results[0]._pos == 1, winEndingsFailMsg);
+        assert(results[1]._line == 10 && results[1]._pos == 1, winEndingsFailMsg);
+    }
+
+    {
+        SearchManager sm("../Resources/unix_endings.txt", "mask", 8);
+        sm.Start();
+        const auto results = sm.GetResults();
+
+        const std::string& unixEndingsFailMsg = "unix_endings test failed";
+
+        assert(results.size() == 2, unixEndingsFailMsg);
+        assert(results[0]._line == 3 && results[0]._pos == 2, unixEndingsFailMsg);
+        assert(results[1]._line == 6 && results[1]._pos == 2, unixEndingsFailMsg);
+    }
+
+    {
+        SearchManager sm("../Resources/nooverlap.txt", "????", 4);
+        sm.Start();
+        const auto results = sm.GetResults();
+
+        const std::string nooverlapFailMsg = "nooverlap test failed";
+
+        assert(results.size() == 2, nooverlapFailMsg);
+        assert(results[0]._line == 1 && results[0]._pos == 1, nooverlapFailMsg);
+        assert(results[1]._line == 1 && results[1]._pos == 5, nooverlapFailMsg);
+    }
+
+    {
+        SearchManager sm("../Resources/oxford_dict.txt", "c?ap", 64);
+        sm.Start();
+        const auto results = sm.GetResults();
+
+        const std::string oxfordFailMsg = "oxford test failed";
+
+        assert(results.size() == 122, oxfordFailMsg);
+        assert(results.rbegin()->_line == 72238 && results.rbegin()->_pos == 129, oxfordFailMsg);
+    }
+
+    std::cout << "all cases passed well!\n";
+
+    return true;   
+}
+
 int main() {
 
-	testRun(defaultFilename, defaultMask);
+    try {
+        casesRun();
+        numThreadsTestRun(threadsTestFilename, threadsTestMask);
+    }
+    catch (const std::exception& ex) {
+	    std::cout << "TESTS FAILED! Error: " << ex.what() << "\n";
+    }
+    
 	return 0;
 }

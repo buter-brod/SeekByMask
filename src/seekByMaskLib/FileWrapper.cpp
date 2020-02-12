@@ -1,5 +1,7 @@
 #include "FileWrapper.h"
 
+const size_t strBufLenDefault = 128;
+
 FileHandle::FileHandle(const std::string& fn) : _filename(fn) {
     open();
 }
@@ -75,8 +77,7 @@ void FileHandle::ReadLine(std::string& output) {
 
 	output.clear();
 
-    const size_t strBufDefault = 512;
-    size_t bufSize = strBufDefault;
+    size_t bufSize = strBufLenDefault;
     bool exceed = false;
 
     do

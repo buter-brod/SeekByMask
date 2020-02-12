@@ -7,8 +7,6 @@ class FileHandle {
 
 public:
 
-    static constexpr size_t strBufferLen = 4096;
-
     explicit FileHandle(const std::string& fn);
     ~FileHandle();
 
