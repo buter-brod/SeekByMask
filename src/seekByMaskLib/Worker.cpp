@@ -1,4 +1,5 @@
 #include "Worker.h"
+#include "FileWrapper.h"
 
 Worker::Worker(const std::string& filename, const PartInfo& bounds, const std::string& mask) : _bounds(bounds), _mask(mask), _filename(filename) {}
 
@@ -53,10 +54,10 @@ std::set<size_t> Worker::findByMask(const std::string& where, const std::string&
     return results;
 }
 
-void Worker::operator()() {
+void Worker::process() {
 
     FileHandle file(_filename);
-    file.seek(_bounds._start);
+    file.Seek(_bounds._start);
 
     bool outOfBounds = false;
 
@@ -64,7 +65,7 @@ void Worker::operator()() {
 
     do {
 
-        const std::string& line = file.readLine();
+        const std::string& line = file.ReadLine();
         position += line.size();
         const auto& where = findByMask(line, _mask);
 
@@ -72,9 +73,19 @@ void Worker::operator()() {
             const std::string str = line.substr(foundPos, _mask.size());
             _occurrences.emplace_back(_linesCount, foundPos, str);
         }
-        
+
         outOfBounds = position > _bounds._end;
         ++_linesCount;
 
     } while (!outOfBounds);
+}
+
+void Worker::operator()() {
+
+    try {
+	    process();
+    }
+    catch(const std::exception& ex) {
+	    _error = ex.what();
+    }
 }

@@ -1,7 +1,8 @@
 #ifndef SEARCHMANAGER_H
 #define SEARCHMANAGER_H
 
-#define DEBUG_PARTS 1
+//todo disable
+//#define DEBUG_PARTS 1
 
 #include "SearchUtils.h"
 #include "Worker.h"
@@ -14,15 +15,20 @@ class SearchManager {
 	SearchManager(const std::string& filename, const std::string& mask, const size_t threads) : _filename(filename), _mask(mask), _maxThreadsCount(threads) {}
 	void Start();
 
+#ifndef NDEBUG
+	void SetDebugParts() {_debugParts = true;}
+#endif
+
 	const std::deque<OccurrenceInfo>& GetResults() const {return _results;}
 
 protected:
     void getPartBounds();
 	void startWorkers();
 	void waitWorkers();
+	void checkErrors();
 	void mergeWorkers();
 
-#if DEBUG_PARTS
+#ifndef RELEASE
     void dumpOutputParts(const std::string& outputFilename = "partsDebugOutput.txt") const;
 #endif
 
@@ -41,6 +47,10 @@ private:
 	std::map<size_t, Worker::Ptr> _workers;
 
 	bool _parallel{true};
+
+#ifndef NDEBUG
+	bool _debugParts{false};
+#endif
 
 	//output data
 	std::deque<OccurrenceInfo> _results;

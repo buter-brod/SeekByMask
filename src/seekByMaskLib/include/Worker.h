@@ -20,6 +20,8 @@ public:
     void Start();
     void Wait();
 
+    const std::string& GetError() const {return _error;}
+
     const std::deque<OccurrenceInfo>& GetOccurrences() const { return _occurrences; }
     size_t GetLinesCount() const { return _linesCount; }
 
@@ -28,6 +30,9 @@ public:
 
     void operator()();
 
+protected:
+    void process();
+
 private:
 
     size_t _linesCount{ 0 };
@@ -35,6 +40,8 @@ private:
     std::thread _thread;
     std::string _mask;
     std::string _filename;
+
+    std::string _error;
 
     std::deque<OccurrenceInfo> _occurrences;
 };

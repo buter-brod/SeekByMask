@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <algorithm>
+#include "FileWrapper.h"
 
 #if _HAS_CXX17
 #include <filesystem>
@@ -10,21 +11,14 @@
 
 size_t getFileSize(const std::string& filename) {
 
-#if _HAS_CXX17
-    // reliable
+	#if _HAS_CXX17
+    // better
     const long sz = std::filesystem::file_size(filename);
     return sz;
 #else
-    // some sources say that this method is not guaranteed to provide exact size in bytes
-	std::ifstream file;
-    file.open(filename, std::ios::in);
-    assert(file.is_open(), "Unable to open input file");
-
-    file.seekg(0, std::ios::end);
-    const auto size = (size_t)file.tellg();
-    file.close();
-
-    return size;
+    FileHandle file(filename);
+    const auto sz = file.GetSize();
+    return sz;
 #endif
 }
 
@@ -45,9 +39,9 @@ void SearchManager::getPartBounds() {
         const size_t assumedFirstByteOfNextPart = position + approxPartSize;
         const size_t assumedEndOfThisPartPos = assumedFirstByteOfNextPart - 1;
 
-        file.seek(assumedFirstByteOfNextPart);
+        file.Seek(assumedFirstByteOfNextPart);
 
-        const std::string& line = file.readLine();
+        const std::string& line = file.ReadLine();
 
         const bool sizeExceed = assumedEndOfThisPartPos >= fileSize - 1;
         const bool isLastPossiblePart = (currentPart == _maxThreadsCount - 1);
@@ -73,8 +67,10 @@ void SearchManager::getPartBounds() {
         ++currentPart;
     }
 
-#if DEBUG_PARTS
-    dumpOutputParts();
+#ifndef NDEBUG
+    if (_debugParts) {
+        dumpOutputParts();
+    }    
 #endif
 }
 
@@ -119,15 +115,24 @@ void SearchManager::mergeWorkers() {
     }
 }
 
+void SearchManager::checkErrors() {
+    
+	for (auto& worker : _workers) {
+        const std::string& err = worker.second->GetError();
+        assert(err.empty(), "error in worker: " + err);
+    }
+}
+
 void SearchManager::Start() {
 
     getPartBounds();
     startWorkers();
     waitWorkers();
-    mergeWorkers();	
+    checkErrors();
+    mergeWorkers();
 }
 
-#if DEBUG_PARTS
+#ifndef NDEBUG
 
 void SearchManager::dumpOutputParts(const std::string& outputFilename) const{
     
@@ -137,7 +142,7 @@ void SearchManager::dumpOutputParts(const std::string& outputFilename) const{
     for (size_t i = 0; i < _parts.size(); i++) {
         const auto sz = _parts.at(i)._size;
 
-        const std::string& partStr = file.read(_parts.at(i)._start, sz);
+        const std::string& partStr = file.Read(_parts.at(i)._start, sz);
         output += "[" + std::to_string(i) + "]" + partStr;
     }
 

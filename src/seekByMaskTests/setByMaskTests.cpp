@@ -1,12 +1,16 @@
-#include "include/SearchManager.h"
+#include "SearchManager.h"
+#include "FileWrapper.h"
 
-#include <iostream>
 #include <chrono>
+#include <iostream>
 
 const std::string defaultMask = "c?ap";
-static const std::string defaultFilename = "../Resources/oxford_dict_large.txt";
+static const std::string defaultFilename = "../Resources/oxford_dict.txt";
 
-static const bool needTestsDefault = false;
+size_t getCoresNum() {
+    static auto coresNum = (size_t)std::thread::hardware_concurrency();
+    return coresNum;
+}
 
 long long getTimeMCS() {
     const auto now = std::chrono::system_clock::now();
@@ -16,13 +20,8 @@ long long getTimeMCS() {
     return mcs;
 }
 
-size_t getCoresNum() {
-    static auto coresNum = (size_t) std::thread::hardware_concurrency();
-	return coresNum;
-}
-
 float testSearch(const std::string& filename, const std::string& mask, const size_t threadsNum) {
-	
+
     const auto time0 = getTimeMCS();
     SearchManager sm(filename, mask, threadsNum);
     sm.Start();
@@ -55,10 +54,10 @@ size_t maxLineLenCount(const std::string& filename) {
 }
 
 size_t testRun(const std::string& filename, const std::string& mask) {
-	
+
     const auto longestLineSize = maxLineLenCount(filename) + 2; // respect LF or CRLF endings
 
-	assert(longestLineSize < FileHandle::strBufferLen, std::string("input file has very long lines, l=") + std::to_string(longestLineSize) + ", max=" + std::to_string(FileHandle::strBufferLen));
+    assert(longestLineSize < FileHandle::strBufferLen, std::string("input file has very long lines, l=") + std::to_string(longestLineSize) + ", max=" + std::to_string(FileHandle::strBufferLen));
 
     const auto cores = getCoresNum();
     const size_t maxThreads = 1024;
@@ -71,21 +70,23 @@ size_t testRun(const std::string& filename, const std::string& mask) {
 
     size_t threads = 1;
     while (threads <= maxThreads) {
-    	
+
         const float time = testSearch(filename, mask, threads);
         std::cout << "threads: " << threads << ", time: " << time << "\n";
 
         if (time < bestTime) {
-	        bestThreads = threads;
+            bestThreads = threads;
             bestTime = time;
         }
 
         if (threads < 10) {
-	        threads++;
-        } else if (threads == 10) {
-	        threads = 16;
-        } else {
-	        threads = threads * 2;
+            threads++;
+        }
+        else if (threads == 10) {
+            threads = 16;
+        }
+        else {
+            threads = threads * 2;
         }
     }
 
@@ -95,57 +96,9 @@ size_t testRun(const std::string& filename, const std::string& mask) {
     return bestThreads;
 }
 
-void normalRun(const std::string& filename, const std::string& mask, const size_t threadsNum) {
+int main() {
 
-	SearchManager sm(filename, mask, threadsNum);
-    sm.Start();
-    const auto& results = sm.GetResults();
+    testRun(defaultFilename, defaultMask);
 
-    std::cout << results.size() << "\n";
-
-    for (auto& occInfo : results) {
-        std::cout << occInfo._line << " " << occInfo._pos << " " << occInfo._str << "\n";
-    }
+  return 0;
 }
-
-int main(int argc, char* argv[]) {
-
-    std::string filename = defaultFilename;
-    std::string mask = defaultMask;
-    bool needTests = needTestsDefault;
-
-    if (argc > 1) {
-	    filename = argv[1];
-    }
-
-    if (argc > 2) {
-        mask = argv[2];
-    }
-
-    if (argc > 3) {
-
-        const bool testsParamSet = std::string(argv[3]) == "tests";
-
-        if (!testsParamSet) {
-            std::cout << "error: third param may only be \"tests\"\n";
-            return 0;
-        }
-
-    	needTests = true;
-    }   
-
-    try {
-        if (needTests) {
-            const size_t bestThreads = testRun(filename, mask);
-            normalRun(filename, mask, bestThreads);
-        }
-        else {
-            const auto coresNum = getCoresNum();
-            normalRun(filename, mask, coresNum);
-        }
-    }
-    catch (const std::exception& ex) {
-	    std::cout << "error! " << ex.what() << "\n";
-    }
-}
-
