@@ -3,6 +3,7 @@
 
 #include "SearchUtils.h"
 #include "Worker.h"
+#include "ResourceGuard.h"
 
 #include <map>
 
@@ -43,6 +44,8 @@ private:
 	// working data
 	std::map<size_t, PartInfo > _parts;
 	std::map<size_t, Worker::Ptr> _workers;
+
+	ResourceGuard _resourceGuard;
 
 	bool _parallel{true};
 

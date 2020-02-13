@@ -80,7 +80,7 @@ void SearchManager::startWorkers() {
     for (size_t partInd = 0; partInd < _parts.size(); ++partInd) {
         const PartInfo& part = _parts.at(partInd);
 
-        Worker::Ptr workerPtr = std::make_shared<Worker>(_filename, part, _mask);
+        Worker::Ptr workerPtr = std::make_shared<Worker>(_filename, part, _mask, &_resourceGuard);
         _workers.insert({ partInd, workerPtr });
 
         workerPtr->Start();

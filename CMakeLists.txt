@@ -10,6 +10,12 @@ set(SEEKBYMASKLIB_DIR ${CMAKE_CURRENT_LIST_DIR}/src/seekByMaskLib)
 set(SEEKBYMASKAPP_DIR ${CMAKE_CURRENT_LIST_DIR}/src/seekByMaskApp)
 set(SEEKBYMASKTESTS_DIR ${CMAKE_CURRENT_LIST_DIR}/src/seekByMaskTests)
 
+option(BUILD_RESOURCE_GUARD "Build with additional protection for access per each resource (usless and just slows everything)" OFF)
+
+if(BUILD_RESOURCE_GUARD)
+  add_definitions(-DLOCK_READ=1)
+endif()
+
 file(GLOB SEEKBYMASKAPP_SRC 
 	${SEEKBYMASKAPP_DIR}/*.cpp
 	${SEEKBYMASKAPP_DIR}/include/*.h

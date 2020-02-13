@@ -1,7 +1,8 @@
 #include "Worker.h"
 #include "FileWrapper.h"
+#include "ResourceGuard.h"
 
-Worker::Worker(const std::string& filename, const PartInfo& bounds, const std::string& mask) : _bounds(bounds), _mask(mask), _filename(filename) {}
+Worker::Worker(const std::string& filename, const PartInfo& bounds, const std::string& mask, ResourceGuard* rg) : _bounds(bounds), _mask(mask), _filename(filename), _resourceGuard(rg) {}
 
 void Worker::Start() {
     _thread = std::thread(std::ref(*this));
@@ -59,6 +60,16 @@ bool Worker::findByMask(const std::string& where, const std::string& mask, std::
     return !results.empty();
 }
 
+ResourceLock::Ptr Worker::tryLock() const {
+
+	ResourceLock::Ptr lockPtr;
+    if (_resourceGuard) {
+        lockPtr = _resourceGuard->GetLock(_filename);
+    }
+
+    return lockPtr;
+}
+
 void Worker::process() {
 
     FileHandle file(_filename);
@@ -71,7 +82,10 @@ void Worker::process() {
     do {
 
         std::string line;
-    	file.ReadLine(line);
+        {
+            auto lock = tryLock();
+            file.ReadLine(line);
+        }
 
         position += line.size();
         std::set<size_t> places;

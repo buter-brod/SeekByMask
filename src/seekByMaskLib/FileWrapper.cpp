@@ -1,6 +1,6 @@
 #include "FileWrapper.h"
 
-const size_t strBufLenDefault = 128;
+static constexpr size_t strBufLenDefault = 128;
 
 FileHandle::FileHandle(const std::string& fn) : _filename(fn) {
     open();
