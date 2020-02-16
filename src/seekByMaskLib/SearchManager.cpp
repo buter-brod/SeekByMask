@@ -61,7 +61,7 @@ void SearchManager::getPartBounds() {
 			endPos = std::min(endPos, assumedEndOfThisPartPos + extraSize);
 		}
 
-		_parts.insert({ currentPart, { position, endPos } });
+		_parts.insert({currentPart, {position, endPos}});
 
 		position = endPos + 1;
 		++currentPart;
@@ -77,11 +77,18 @@ void SearchManager::getPartBounds() {
 
 void SearchManager::startWorkers() {
 
+#ifdef TASK_QUEUE
+	_taskQueue.Start();
+#endif
+
 	for (size_t partInd = 0; partInd < _parts.size(); ++partInd) {
 		const PartInfo& part = _parts.at(partInd);
 
 		Worker::Ptr workerPtr = std::make_shared<Worker>(_filename, part, _mask, &_resourceGuard);
-		_workers.insert({ partInd, workerPtr });
+
+		workerPtr->SetTaskQueue(&_taskQueue);
+
+		_workers.insert({partInd, workerPtr});
 
 		workerPtr->Start();
 

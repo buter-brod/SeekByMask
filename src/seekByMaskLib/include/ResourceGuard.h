@@ -9,7 +9,7 @@
 class ResourceLock {
 public:
 	typedef std::shared_ptr<ResourceLock> Ptr;
-	ResourceLock(std::mutex& m);
+	explicit ResourceLock(std::mutex& m);
 
 private:
 	typedef std::lock_guard<std::mutex> LockGuard;

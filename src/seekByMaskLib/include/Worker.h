@@ -1,14 +1,15 @@
 #ifndef WORKER_H
 #define WORKER_H
 
-
 #include <memory>
 #include <thread>
 #include <deque>
 #include <set>
 #include "ResourceGuard.h"
 
+class FileHandle;
 class ResourceGuard;
+class TaskQueue;
 
 struct PartInfo {
 
@@ -18,17 +19,17 @@ struct PartInfo {
 		_size = _end - _start + 1;
 	}
 
-	size_t _start{ 0 };
-	size_t _end{ 0 };
-	size_t _size{ 0 };
+	size_t _start{0};
+	size_t _end{0};
+	size_t _size{0};
 };
 
 struct OccurrenceInfo {
 
 	OccurrenceInfo(const size_t line, const size_t pos, const std::string& str) : _line(line), _pos(pos), _str(str) {}
 
-	size_t _line{ 0 };
-	size_t _pos{ 0 };
+	size_t _line{0};
+	size_t _pos{0};
 	std::string _str;
 };
 
@@ -38,10 +39,13 @@ public:
 
 	typedef std::shared_ptr<Worker> Ptr;
 
-	explicit Worker(const std::string& filename, const PartInfo& bounds, const std::string& mask, ResourceGuard* rg = nullptr);
+	explicit Worker(const std::string& filename, const PartInfo& bounds, const std::string& mask,
+	                ResourceGuard* rg = nullptr);
 
 	void Start();
 	void Wait();
+
+	void SetTaskQueue(TaskQueue* tq) { _taskQueue = tq; }
 
 	const std::string& GetError() const { return _error; }
 
@@ -55,11 +59,13 @@ public:
 
 protected:
 	void process();
+	void getLine(FileHandle* file, std::string& line);
+
 	ResourceLock::Ptr tryLock() const;
 
 private:
 
-	size_t _linesCount{ 0 };
+	size_t _linesCount{0};
 	PartInfo _bounds;
 	std::thread _thread;
 	std::string _mask;
@@ -67,7 +73,9 @@ private:
 
 	std::string _error;
 
-	ResourceGuard* _resourceGuard{ nullptr };
+	ResourceGuard* _resourceGuard{nullptr};
+
+	TaskQueue* _taskQueue{nullptr};
 
 	std::deque<OccurrenceInfo> _occurrences;
 };

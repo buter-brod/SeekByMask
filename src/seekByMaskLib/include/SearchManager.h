@@ -1,9 +1,9 @@
 #ifndef SEARCHMANAGER_H
 #define SEARCHMANAGER_H
 
-#include "SearchUtils.h"
 #include "Worker.h"
 #include "ResourceGuard.h"
+#include "TaskQueue.h"
 
 #include <map>
 
@@ -11,7 +11,10 @@ class SearchManager {
 
 public:
 
-	SearchManager(const std::string& filename, const std::string& mask, const size_t threads) : _filename(filename), _mask(mask), _maxThreadsCount(threads) {}
+	SearchManager(const std::string& filename, const std::string& mask, const size_t threads) : _filename(filename),
+	                                                                                            _mask(mask),
+	                                                                                            _maxThreadsCount(threads) {}
+
 	void Start();
 
 #ifndef NDEBUG
@@ -36,21 +39,23 @@ private:
 	std::string _filename;
 	std::string _mask;
 
-	size_t _maxThreadsCount{ 1 };
+	size_t _maxThreadsCount{1};
 
 	// for results output: should lines and rows numeration start from 0 or 1
-	bool countStartFrom1{ true };
+	bool countStartFrom1{true};
 
 	// working data
-	std::map<size_t, PartInfo > _parts;
+	std::map<size_t, PartInfo> _parts;
 	std::map<size_t, Worker::Ptr> _workers;
 
 	ResourceGuard _resourceGuard;
 
-	bool _parallel{ true };
+	TaskQueue _taskQueue;
+
+	bool _parallel{true};
 
 #ifndef NDEBUG
-	bool _debugParts{ false };
+	bool _debugParts{false};
 #endif
 
 	//output data

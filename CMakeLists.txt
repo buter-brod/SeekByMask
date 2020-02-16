@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.1)
 
 project(SeekByMask)
 
+mark_as_advanced(CMAKE_INSTALL_PREFIX)
+
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR})
@@ -11,6 +13,11 @@ set(SEEKBYMASKAPP_DIR ${CMAKE_CURRENT_LIST_DIR}/src/seekByMaskApp)
 set(SEEKBYMASKTESTS_DIR ${CMAKE_CURRENT_LIST_DIR}/src/seekByMaskTests)
 
 option(BUILD_RESOURCE_GUARD "Build with additional protection for access per each resource (usless and just slows everything)" OFF)
+option(BUILD_TASK_QUEUE "Build task queue that works in separate thread and allows queued access to resource (usless and just slows everything)" OFF)
+
+if(BUILD_TASK_QUEUE)
+  add_definitions(-DTASK_QUEUE=1)
+endif()
 
 if(BUILD_RESOURCE_GUARD)
   add_definitions(-DLOCK_READ=1)

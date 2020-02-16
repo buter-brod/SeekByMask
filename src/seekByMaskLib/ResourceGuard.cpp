@@ -1,8 +1,6 @@
 #include "ResourceGuard.h"
 
-ResourceLock::ResourceLock(std::mutex& m) {
-
-	_lockPtr = std::make_shared<LockGuard>(m);
+ResourceLock::ResourceLock(std::mutex& m) : _lockPtr(std::make_shared<LockGuard>(m)) {
 }
 
 ResourceLock::Ptr ResourceGuard::GetLock(const std::string& resName) {

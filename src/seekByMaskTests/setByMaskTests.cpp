@@ -1,4 +1,5 @@
 #include "SearchManager.h"
+#include "SearchUtils.h"
 
 #include <chrono>
 #include <iostream>
@@ -29,7 +30,7 @@ float testSearch(const std::string& filename, const std::string& mask, const siz
 size_t numThreadsTestRun(const std::string& filename, const std::string& mask) {
 
 	const auto cores = (size_t)std::thread::hardware_concurrency();
-	const size_t maxThreads = 1024;
+	const size_t maxThreads = 512;
 
 	float bestTime = 100500.f;
 	size_t bestThreads = 0;
@@ -125,7 +126,7 @@ int main() {
 		casesRun();
 		numThreadsTestRun(threadsTestFilename, threadsTestMask);
 	}
-	catch (const std::exception & ex) {
+	catch (const std::exception& ex) {
 		std::cout << "TESTS FAILED! Error: " << ex.what() << "\n";
 	}
 

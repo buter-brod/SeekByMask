@@ -25,8 +25,8 @@ protected:
 private:
 	std::string _filename;
 
-	size_t _cursor{ 0 };
-	FILE* _file{ nullptr };
+	size_t _cursor{0};
+	FILE* _file{nullptr};
 };
 
 #endif

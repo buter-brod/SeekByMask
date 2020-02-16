@@ -35,8 +35,7 @@ int main(int argc, char* argv[]) {
 		const auto coresNum = std::thread::hardware_concurrency();
 		run(filename, mask, coresNum);
 	}
-	catch (const std::exception & ex) {
+	catch (const std::exception& ex) {
 		std::cout << "error: " << ex.what() << "\n";
 	}
 }
-

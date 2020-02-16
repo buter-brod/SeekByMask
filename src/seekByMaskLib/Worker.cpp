@@ -1,8 +1,19 @@
 #include "Worker.h"
 #include "FileWrapper.h"
 #include "ResourceGuard.h"
+#include "TaskQueue.h"
 
-Worker::Worker(const std::string& filename, const PartInfo& bounds, const std::string& mask, ResourceGuard* rg) : _bounds(bounds), _mask(mask), _filename(filename), _resourceGuard(rg) {}
+#include <future>
+
+constexpr bool useTaskQueue =
+#ifdef TASK_QUEUE
+	true;
+#else
+	false;
+#endif
+
+Worker::Worker(const std::string& filename, const PartInfo& bounds, const std::string& mask, ResourceGuard* rg) :
+	_bounds(bounds), _mask(mask), _filename(filename), _resourceGuard(rg) {}
 
 void Worker::Start() {
 	_thread = std::thread(std::ref(*this));
@@ -70,6 +81,33 @@ ResourceLock::Ptr Worker::tryLock() const {
 	return lockPtr;
 }
 
+void Worker::getLine(FileHandle* file, std::string& line) {
+
+	std::promise<std::string> readLnPromise;
+	const TaskQueue::TaskPtr getLineTaskPtr = std::make_shared<TaskQueue::Task>([this, &file, &readLnPromise]() {
+
+		std::string line;
+		{
+			const auto& lock = tryLock();
+			file->ReadLine(line);
+		}
+		readLnPromise.set_value(line);
+	});
+
+	if (useTaskQueue && _taskQueue) {
+		_taskQueue->AddTask(getLineTaskPtr);
+	}
+	else {
+		(*getLineTaskPtr)();
+	}
+
+	line = readLnPromise.get_future().get();
+
+	if (!getLineTaskPtr->_error.empty()) {
+		throw std::exception(getLineTaskPtr->_error.c_str());
+	}
+}
+
 void Worker::process() {
 
 	FileHandle file(_filename);
@@ -80,12 +118,8 @@ void Worker::process() {
 	size_t position = _bounds._start;
 
 	do {
-
 		std::string line;
-		{
-			auto lock = tryLock();
-			file.ReadLine(line);
-		}
+		getLine(&file, line);
 
 		position += line.size();
 		std::set<size_t> places;
@@ -101,7 +135,8 @@ void Worker::process() {
 		outOfBounds = position > _bounds._end;
 		++_linesCount;
 
-	} while (!outOfBounds);
+	}
+	while (!outOfBounds);
 }
 
 void Worker::operator()() {
@@ -109,7 +144,7 @@ void Worker::operator()() {
 	try {
 		process();
 	}
-	catch (const std::exception & ex) {
+	catch (const std::exception& ex) {
 		_error = ex.what();
 	}
 }

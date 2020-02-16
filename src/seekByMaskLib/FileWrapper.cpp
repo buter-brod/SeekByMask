@@ -80,8 +80,7 @@ void FileHandle::ReadLine(std::string& output) {
 	size_t bufSize = strBufLenDefault;
 	bool exceed = false;
 
-	do
-	{
+	do {
 		size_t writtenBytes = 0;
 		size_t toRead = bufSize;
 
@@ -98,7 +97,8 @@ void FileHandle::ReadLine(std::string& output) {
 
 		const char lastWrittenSym = output[bufSize - 2];
 		exceed = lastWrittenSym == 0 || lastWrittenSym == '\n';
-	} while (!exceed);
+	}
+	while (!exceed);
 
 	const char nullterm = 0;
 	output.resize(output.find(nullterm));
