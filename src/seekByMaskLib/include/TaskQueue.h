@@ -43,7 +43,6 @@ public:
 
 protected:
 	bool process();
-	void error(const TaskPtr& task, const std::string& errStr);
 
 private:
 	std::thread _thread;
@@ -51,7 +50,8 @@ private:
 
 	std::atomic<bool> _endRequest{false};
 
-	std::mutex _queueMutex;
+	std::mutex _qMutex;
+	std::condition_variable _qCondition;
 };
 
 #endif
